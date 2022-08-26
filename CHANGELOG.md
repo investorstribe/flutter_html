@@ -1,23 +1,3 @@
-## [3.0.0-alpha.5] - June 9, 2022:
-* Fixed hot reloads, thanks @arjenmels
-* Fixed link taps not working
-* Improvements in README
-
-## [3.0.0-alpha.3] - April 14, 2022:
-* Fixed styling not being applied to list item markers
-* [video] Fixed crash when iframe or video tags used unsupported/incorrect height or width
-
-## [3.0.0-alpha.2] - January 5, 2022:
-* **BREAKING** Full modularization using split packages; see our upgrade guide or use flutter_html_all 
-
-## [3.0.0-alpha.1] - December 21, 2021:
-* **BREAKING** Reworked custom renders pending full modularation in 3.0.0
-* Extended support custom render when using SelectableHtml
-* Updated flutter_svg to 1.0.0
-* Support flutter_webview 3.x
-* Automatic disposal of video and audio controllers
-* Fix block elements bottom spacing in table cells
-
 ## [2.2.1] - December 8, 2021:
 * Allow styling on ruby tags
 * Allow width/height/alignment styling on table/tr/td tags

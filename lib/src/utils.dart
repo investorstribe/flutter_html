@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_html/style.dart';
 
@@ -18,6 +21,23 @@ Map<String, String> namedColors = {
   "Navy": "#000080",
   "Fuchsia": "#FF00FF",
   "Purple": "#800080",
+};
+
+Map<String, String> mathML2Tex = {
+  "sin": r"\sin",
+  "sinh": r"\sinh",
+  "csc": r"\csc",
+  "csch": r"csch",
+  "cos": r"\cos",
+  "cosh": r"\cosh",
+  "sec": r"\sec",
+  "sech": r"\sech",
+  "tan": r"\tan",
+  "tanh": r"\tanh",
+  "cot": r"\cot",
+  "coth": r"\coth",
+  "log": r"\log",
+  "ln": r"\ln",
 };
 
 class Context<T> {
@@ -57,6 +77,12 @@ class CustomBorderSide {
   BorderStyle style;
 }
 
+String getRandString(int len) {
+  var random = Random.secure();
+  var values = List<int>.generate(len, (i) =>  random.nextInt(255));
+  return base64UrlEncode(values);
+}
+
 extension TextTransformUtil on String? {
   String? transformed(TextTransform? transform) {
     if (this == null) return null;
@@ -85,4 +111,8 @@ extension TextTransformUtil on String? {
       return this;
     }
   }
+}
+
+extension ClampedEdgeInsets on EdgeInsetsGeometry {
+  EdgeInsetsGeometry get nonNegative => this.clamp(EdgeInsets.zero, const EdgeInsets.all(double.infinity));
 }

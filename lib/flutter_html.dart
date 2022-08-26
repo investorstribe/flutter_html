@@ -1,27 +1,28 @@
 library flutter_html;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_html/custom_render.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_html/html_parser.dart';
+import 'package:flutter_html/image_render.dart';
 import 'package:flutter_html/src/html_elements.dart';
 import 'package:flutter_html/style.dart';
 import 'package:html/dom.dart' as dom;
+import 'package:flutter_html/src/navigation_delegate.dart';
 
-export 'package:flutter_html/custom_render.dart';
 //export render context api
 export 'package:flutter_html/html_parser.dart';
-//export render context api
-export 'package:flutter_html/html_parser.dart';
+export 'package:flutter_html/image_render.dart';
 //export src for advanced custom render uses (e.g. casting context.tree)
 export 'package:flutter_html/src/anchor.dart';
 export 'package:flutter_html/src/interactable_element.dart';
 export 'package:flutter_html/src/layout_element.dart';
 export 'package:flutter_html/src/replaced_element.dart';
 export 'package:flutter_html/src/styled_element.dart';
+export 'package:flutter_html/src/navigation_delegate.dart';
 //export style api
 export 'package:flutter_html/style.dart';
 
-class Html extends StatefulWidget {
+class Html extends StatelessWidget {
   /// The `Html` widget takes HTML as input and displays a RichText
   /// tree of the parsed HTML content.
   ///
@@ -53,14 +54,17 @@ class Html extends StatefulWidget {
     required this.data,
     this.onLinkTap,
     this.onAnchorTap,
-    this.customRenders = const {},
+    this.customRender = const {},
+    this.customImageRenders = const {},
     this.onCssParseError,
     this.onImageError,
+    this.onMathError,
     this.shrinkWrap = false,
     this.onImageTap,
     this.tagsList = const [],
     this.style = const {},
-  })  : documentElement = null,
+    this.navigationDelegateForIframe,
+  })  : document = null,
         assert(data != null),
         _anchorKey = anchorKey ?? GlobalKey(),
         super(key: key);
@@ -68,37 +72,21 @@ class Html extends StatefulWidget {
   Html.fromDom({
     Key? key,
     GlobalKey? anchorKey,
-    @required dom.Document? document,
+    @required this.document,
     this.onLinkTap,
     this.onAnchorTap,
-    this.customRenders = const {},
+    this.customRender = const {},
+    this.customImageRenders = const {},
     this.onCssParseError,
     this.onImageError,
+    this.onMathError,
     this.shrinkWrap = false,
     this.onImageTap,
     this.tagsList = const [],
     this.style = const {},
+    this.navigationDelegateForIframe,
   })  : data = null,
         assert(document != null),
-        this.documentElement = document!.documentElement,
-        _anchorKey = anchorKey ?? GlobalKey(),
-        super(key: key);
-
-  Html.fromElement({
-    Key? key,
-    GlobalKey? anchorKey,
-    @required this.documentElement,
-    this.onLinkTap,
-    this.onAnchorTap,
-    this.customRenders = const {},
-    this.onCssParseError,
-    this.onImageError,
-    this.shrinkWrap = false,
-    this.onImageTap,
-    this.tagsList = const [],
-    this.style = const {},
-  })  : data = null,
-        assert(documentElement != null),
         _anchorKey = anchorKey ?? GlobalKey(),
         super(key: key);
 
@@ -108,8 +96,8 @@ class Html extends StatefulWidget {
   /// The HTML data passed to the widget as a String
   final String? data;
 
-  /// The HTML data passed to the widget as a pre-processed [dom.Element]
-  final dom.Element? documentElement;
+  /// The HTML data passed to the widget as a pre-processed [dom.Document]
+  final dom.Document? document;
 
   /// A function that defines what to do when a link is tapped
   final OnTap? onLinkTap;
@@ -118,11 +106,19 @@ class Html extends StatefulWidget {
   /// the default anchor behaviour is overwritten.
   final OnTap? onAnchorTap;
 
+  /// An API that allows you to customize the entire process of image rendering.
+  /// See the README for more details.
+  final Map<ImageSourceMatcher, ImageRender> customImageRenders;
+
   /// A function that defines what to do when CSS fails to parse
   final OnCssParseError? onCssParseError;
 
   /// A function that defines what to do when an image errors
   final ImageErrorListener? onImageError;
+
+  /// A function that defines what to do when either <math> or <tex> fails to render
+  /// You can return a widget here to override the default error widget.
+  final OnMathError? onMathError;
 
   /// A parameter that should be set when the HTML widget is expected to be
   /// flexible
@@ -136,76 +132,61 @@ class Html extends StatefulWidget {
 
   /// Either return a custom widget for specific node types or return null to
   /// fallback to the default rendering.
-  final Map<CustomRenderMatcher, CustomRender> customRenders;
+  final Map<String, CustomRender> customRender;
 
   /// An API that allows you to override the default style for any HTML element
   final Map<String, Style> style;
+
+  /// Decides how to handle a specific navigation request in the WebView of an
+  /// Iframe. It's necessary to use the webview_flutter package inside the app
+  /// to use NavigationDelegate.
+  final NavigationDelegate? navigationDelegateForIframe;
 
   static List<String> get tags => new List<String>.from(STYLED_ELEMENTS)
     ..addAll(INTERACTABLE_ELEMENTS)
     ..addAll(REPLACED_ELEMENTS)
     ..addAll(LAYOUT_ELEMENTS)
     ..addAll(TABLE_CELL_ELEMENTS)
-    ..addAll(TABLE_DEFINITION_ELEMENTS)
-    ..addAll(EXTERNAL_ELEMENTS);
-
-  @override
-  State<StatefulWidget> createState() => _HtmlState();
-}
-
-class _HtmlState extends State<Html> {
-  late dom.Element documentElement;
-
-  @override
-  void initState() {
-    super.initState();
-    documentElement = widget.data != null
-        ? HtmlParser.parseHTML(widget.data!)
-        : widget.documentElement!;
-  }
-
-  @override
-  void didUpdateWidget(Html oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if ((widget.data != null && oldWidget.data != widget.data) ||
-        oldWidget.documentElement != widget.documentElement) {
-      documentElement = widget.data != null
-          ? HtmlParser.parseHTML(widget.data!)
-          : widget.documentElement!;
-    }
-  }
+    ..addAll(TABLE_DEFINITION_ELEMENTS);
 
   @override
   Widget build(BuildContext context) {
+    final dom.Document doc =
+        data != null ? HtmlParser.parseHTML(data!) : document!;
+    final double? width = shrinkWrap ? null : MediaQuery.of(context).size.width;
+
     return Container(
-      width: widget.shrinkWrap ? null : MediaQuery.of(context).size.width,
+      width: width,
       child: HtmlParser(
-        key: widget._anchorKey,
-        htmlData: documentElement,
-        onLinkTap: widget.onLinkTap,
-        onAnchorTap: widget.onAnchorTap,
-        onImageTap: widget.onImageTap,
-        onCssParseError: widget.onCssParseError,
-        onImageError: widget.onImageError,
-        shrinkWrap: widget.shrinkWrap,
+        key: _anchorKey,
+        htmlData: doc,
+        onLinkTap: onLinkTap,
+        onAnchorTap: onAnchorTap,
+        onImageTap: onImageTap,
+        onCssParseError: onCssParseError,
+        onImageError: onImageError,
+        onMathError: onMathError,
+        shrinkWrap: shrinkWrap,
         selectable: false,
-        style: widget.style,
-        customRenders: {}
-          ..addAll(widget.customRenders)
-          ..addAll(defaultRenders),
-        tagsList: widget.tagsList.isEmpty ? Html.tags : widget.tagsList,
+        style: style,
+        customRender: customRender,
+        imageRenders: {}
+          ..addAll(customImageRenders)
+          ..addAll(defaultImageRenders),
+        tagsList: tagsList.isEmpty ? Html.tags : tagsList,
+        navigationDelegateForIframe: navigationDelegateForIframe,
       ),
     );
   }
 }
 
-class SelectableHtml extends StatefulWidget {
+class SelectableHtml extends StatelessWidget {
   /// The `SelectableHtml` widget takes HTML as input and displays a RichText
   /// tree of the parsed HTML content (which is selectable)
   ///
   /// **Attributes**
   /// **data** *required* takes in a String of HTML data (required only for `Html` constructor).
-  /// **documentElement** *required* takes in a Element of HTML data (required only for `Html.fromDom` and `Html.fromElement` constructor).
+  /// **document** *required* takes in a Document of HTML data (required only for `Html.fromDom` constructor).
   ///
   /// **onLinkTap** This function is called whenever a link (`<a href>`)
   /// is tapped.
@@ -240,11 +221,10 @@ class SelectableHtml extends StatefulWidget {
     this.onCssParseError,
     this.shrinkWrap = false,
     this.style = const {},
-    this.customRenders = const {},
     this.tagsList = const [],
     this.selectionControls,
     this.scrollPhysics,
-  })  : documentElement = null,
+  }) : document = null,
         assert(data != null),
         _anchorKey = anchorKey ?? GlobalKey(),
         super(key: key);
@@ -252,37 +232,17 @@ class SelectableHtml extends StatefulWidget {
   SelectableHtml.fromDom({
     Key? key,
     GlobalKey? anchorKey,
-    @required dom.Document? document,
+    required this.document,
     this.onLinkTap,
     this.onAnchorTap,
     this.onCssParseError,
     this.shrinkWrap = false,
     this.style = const {},
-    this.customRenders = const {},
     this.tagsList = const [],
     this.selectionControls,
     this.scrollPhysics,
-  })  : data = null,
+  }) : data = null,
         assert(document != null),
-        this.documentElement = document!.documentElement,
-        _anchorKey = anchorKey ?? GlobalKey(),
-        super(key: key);
-
-  SelectableHtml.fromElement({
-    Key? key,
-    GlobalKey? anchorKey,
-    @required this.documentElement,
-    this.onLinkTap,
-    this.onAnchorTap,
-    this.onCssParseError,
-    this.shrinkWrap = false,
-    this.style = const {},
-    this.customRenders = const {},
-    this.tagsList = const [],
-    this.selectionControls,
-    this.scrollPhysics,
-  })  : data = null,
-        assert(documentElement != null),
         _anchorKey = anchorKey ?? GlobalKey(),
         super(key: key);
 
@@ -292,8 +252,8 @@ class SelectableHtml extends StatefulWidget {
   /// The HTML data passed to the widget as a String
   final String? data;
 
-  /// The HTML data passed to the widget as a pre-processed [dom.Element]
-  final dom.Element? documentElement;
+  /// The HTML data passed to the widget as a pre-processed [dom.Document]
+  final dom.Document? document;
 
   /// A function that defines what to do when a link is tapped
   final OnTap? onLinkTap;
@@ -322,49 +282,33 @@ class SelectableHtml extends StatefulWidget {
   /// Allows you to override the default scrollPhysics for [SelectableText.rich]
   final ScrollPhysics? scrollPhysics;
 
-  /// Either return a custom widget for specific node types or return null to
-  /// fallback to the default rendering.
-  final Map<CustomRenderMatcher, SelectableCustomRender> customRenders;
-
   static List<String> get tags => new List<String>.from(SELECTABLE_ELEMENTS);
 
   @override
-  State<StatefulWidget> createState() => _SelectableHtmlState();
-}
-
-class _SelectableHtmlState extends State<SelectableHtml> {
-  late final dom.Element documentElement;
-
-  @override
-  void initState() {
-    super.initState();
-    documentElement = widget.data != null
-        ? HtmlParser.parseHTML(widget.data!)
-        : widget.documentElement!;
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final dom.Document doc = data != null ? HtmlParser.parseHTML(data!) : document!;
+    final double? width = shrinkWrap ? null : MediaQuery.of(context).size.width;
+
     return Container(
-      width: widget.shrinkWrap ? null : MediaQuery.of(context).size.width,
+      width: width,
       child: HtmlParser(
-        key: widget._anchorKey,
-        htmlData: documentElement,
-        onLinkTap: widget.onLinkTap,
-        onAnchorTap: widget.onAnchorTap,
+        key: _anchorKey,
+        htmlData: doc,
+        onLinkTap: onLinkTap,
+        onAnchorTap: onAnchorTap,
         onImageTap: null,
-        onCssParseError: widget.onCssParseError,
+        onCssParseError: onCssParseError,
         onImageError: null,
-        shrinkWrap: widget.shrinkWrap,
+        onMathError: null,
+        shrinkWrap: shrinkWrap,
         selectable: true,
-        style: widget.style,
-        customRenders: {}
-          ..addAll(widget.customRenders)
-          ..addAll(defaultRenders),
-        tagsList:
-            widget.tagsList.isEmpty ? SelectableHtml.tags : widget.tagsList,
-        selectionControls: widget.selectionControls,
-        scrollPhysics: widget.scrollPhysics,
+        style: style,
+        customRender: {},
+        imageRenders: defaultImageRenders,
+        tagsList: tagsList.isEmpty ? SelectableHtml.tags : tagsList,
+        navigationDelegateForIframe: null,
+        selectionControls: selectionControls,
+        scrollPhysics: scrollPhysics,
       ),
     );
   }

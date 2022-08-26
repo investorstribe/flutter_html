@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
-import 'package:flutter_html_all/flutter_html_all.dart';
-import 'package:flutter_math_fork/flutter_math.dart';
 
 void main() => runApp(new MyApp());
 
@@ -50,8 +48,8 @@ const htmlData = r"""
       Solve for <var>x<sub>n</sub></var>: log<sub>2</sub>(<var>x</var><sup>2</sup>+<var>n</var>) = 9<sup>3</sup>
       <p>One of the most <span>common</span> equations in all of physics is <br /><var>E</var>=<var>m</var><var>c</var><sup>2</sup>.</p>
       <h3>Inline Styles:</h3>
-      <p>The should be <span style='color: blue;'>BLUE style='color: blue;'</span></p>
-      <p>The should be <span style='color: red;'>RED style='color: red;'</span></p>
+      <p>The should be <em>BLUE style='color: blue;'</em></p>
+      <p>The should be <pre>RED style='color: red;'</pre></p>
       <p>The should be <span style='color: rgba(0, 0, 0, 0.10);'>BLACK with 10% alpha style='color: rgba(0, 0, 0, 0.10);</span></p>
       <p>The should be <span style='color: rgb(0, 97, 0);'>GREEN style='color: rgb(0, 97, 0);</span></p>
       <p>The should be <span style='background-color: red; color: rgb(0, 97, 0);'>GREEN style='color: rgb(0, 97, 0);</span></p>
@@ -73,7 +71,7 @@ const htmlData = r"""
       </thead>
       <tbody>
       <tr>
-        <td rowspan='2'>Rowspan<br>Rowspan<br>Rowspan<br>Rowspan<br>Rowspan<br>Rowspan<br>Rowspan<br>Rowspan<br>Rowspan<br>Rowspan</td><td>Data</td><td>Data</td>
+        <td rowspan='2'>Rowspan\nRowspan\nRowspan\nRowspan\nRowspan\nRowspan\nRowspan\nRowspan\nRowspan\nRowspan</td><td>Data</td><td>Data</td>
       </tr>
       <tr>
         <td colspan="2"><img alt='Google' src='https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png' /></td>
@@ -241,8 +239,6 @@ const htmlData = r"""
       <p id='bottom'><a href='#top'>Scroll to top</a></p>
 """;
 
-final staticAnchorKey = GlobalKey();
-
 class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
@@ -251,19 +247,10 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text('flutter_html Example'),
         centerTitle: true,
       ),
-      floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.arrow_downward),
-        onPressed: () {
-          final anchorContext = AnchorKey.forId(staticAnchorKey, "bottom")?.currentContext;
-          if (anchorContext != null) {
-            Scrollable.ensureVisible(anchorContext);
-          }
-        },
-      ),
       body: SingleChildScrollView(
         child: Html(
-          anchorKey: staticAnchorKey,
           data: htmlData,
+          tagsList: Html.tags..addAll(["bird", "flutter"]),
           style: {
             "table": Style(
               backgroundColor: Color.fromARGB(0x50, 0xee, 0xee, 0xee),
@@ -281,54 +268,71 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             'h5': Style(maxLines: 2, textOverflow: TextOverflow.ellipsis),
           },
-          tagsList: Html.tags..addAll(['tex', 'bird', 'flutter']),
-          customRenders: {
-            tagMatcher("tex"): CustomRender.widget(widget: (context, buildChildren) => Math.tex(
-              context.tree.element?.innerHtml ?? '',
-              mathStyle: MathStyle.display,
-              textStyle: context.style.generateTextStyle(),
-              onErrorFallback: (FlutterMathException e) {
-                return Text(e.message);
-              },
-            )),
-            tagMatcher("bird"): CustomRender.inlineSpan(inlineSpan: (context, buildChildren) => TextSpan(text: "🐦")),
-            tagMatcher("flutter"): CustomRender.widget(widget: (context, buildChildren) => FlutterLogo(
-              style: (context.tree.element!.attributes['horizontal'] != null)
-                  ? FlutterLogoStyle.horizontal
-                  : FlutterLogoStyle.markOnly,
-              textColor: context.style.color!,
-              size: context.style.fontSize!.size! * 5,
-            )),
-            tagMatcher("table"): CustomRender.widget(widget: (context, buildChildren) => SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: tableRender.call().widget!.call(context, buildChildren),
-            )),
-            audioMatcher(): audioRender(),
-            iframeMatcher(): iframeRender(),
-            mathMatcher(): mathRender(onMathError: (error, exception, exceptionWithType) {
-              print(exception);
-              return Text(exception);
-            }),
-            svgTagMatcher(): svgTagRender(),
-            svgDataUriMatcher(): svgDataImageRender(),
-            svgAssetUriMatcher(): svgAssetImageRender(),
-            svgNetworkSourceMatcher(): svgNetworkImageRender(),
-            networkSourceMatcher(domains: ["flutter.dev"]): CustomRender.widget(
-                widget: (context, buildChildren) {
-                  return FlutterLogo(size: 36);
-                }),
+          customRender: {
+            'em': (RenderContext rendercontext, Widget child) {
+              Size size = MediaQuery.of(rendercontext.buildContext).size;
+              return Container(
+                // height: 24,
+                width: size.width,
+                margin: EdgeInsets.symmetric(horizontal: 24),
+                color: Colors.blueGrey,
+                child: Text(
+                  'YOYO',
+                  style: TextStyle(color: Colors.white),
+                ),
+              );
+            },
+            'span': (RenderContext rendercontext, Widget child) {
+              return rendercontext.tree.style.backgroundColor !=
+                      Color(0x00000000)
+                  ? Container(
+                      height: 15,
+                      width: 50,
+                      color: rendercontext.tree.style.backgroundColor,
+                      child: Text(
+                        'ZOZO',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    )
+                  : child;
+            },
+            "table": (context, child) {
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: (context.tree as TableLayoutElement).toWidget(context),
+              );
+            },
+            "bird": (RenderContext context, Widget child) {
+              return TextSpan(text: "🐦");
+            },
+            "flutter": (RenderContext context, Widget child) {
+              return FlutterLogo(
+                style: (context.tree.element!.attributes['horizontal'] != null)
+                    ? FlutterLogoStyle.horizontal
+                    : FlutterLogoStyle.markOnly,
+                textColor: context.style.color!,
+                size: context.style.fontSize!.size! * 5,
+              );
+            },
+          },
+          customImageRenders: {
+            networkSourceMatcher(domains: ["flutter.dev"]):
+                (context, attributes, element) {
+              return FlutterLogo(size: 36);
+            },
             networkSourceMatcher(domains: ["mydomain.com"]): networkImageRender(
               headers: {"Custom-Header": "some-value"},
               altWidget: (alt) => Text(alt ?? ""),
               loadingWidget: () => Text("Loading..."),
             ),
             // On relative paths starting with /wiki, prefix with a base url
-                (context) => context.tree.element?.attributes["src"] != null
-                && context.tree.element!.attributes["src"]!.startsWith("/wiki"):
-            networkImageRender(mapUrl: (url) => "https://upload.wikimedia.org" + url!),
+            (attr, _) =>
+                    attr["src"] != null && attr["src"]!.startsWith("/wiki"):
+                networkImageRender(
+                    mapUrl: (url) => "https://upload.wikimedia.org" + url!),
             // Custom placeholder image for broken links
-            networkSourceMatcher(): networkImageRender(altWidget: (_) => FlutterLogo()),
-            videoMatcher(): videoRender(),
+            networkSourceMatcher():
+                networkImageRender(altWidget: (_) => FlutterLogo()),
           },
           onLinkTap: (url, _, __, ___) {
             print("Opening $url...");
@@ -345,15 +349,10 @@ class _MyHomePageState extends State<MyHomePage> {
             messages.forEach((element) {
               print(element);
             });
+            return null;
           },
         ),
       ),
     );
   }
 }
-
-CustomRenderMatcher texMatcher() => (context) => context.tree.element?.localName == 'tex';
-
-CustomRenderMatcher birdMatcher() => (context) => context.tree.element?.localName == 'bird';
-
-CustomRenderMatcher flutterMatcher() => (context) => context.tree.element?.localName == 'flutter';
