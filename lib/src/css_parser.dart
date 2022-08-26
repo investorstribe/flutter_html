@@ -3,9 +3,11 @@ import 'dart:ui';
 import 'package:collection/collection.dart';
 import 'package:csslib/visitor.dart' as css;
 import 'package:csslib/parser.dart' as cssparser;
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_html/src/utils.dart';
+import 'package:flutter_html/style.dart';
 
 Style declarationsToStyle(Map<String, List<css.Expression>> declarations) {
   Style style = new Style();
@@ -49,7 +51,7 @@ Style declarationsToStyle(Map<String, List<css.Expression>> declarations) {
           List<String> possibleBorderValues = ["dotted", "dashed", "solid", "double", "groove", "ridge", "inset", "outset", "none", "hidden"];
           /// List<css.LiteralTerm> might include other values than the ones we want for [BorderSide.style], so make sure to remove those before passing it to [ExpressionMapping]
           potentialStyles.removeWhere((element) => element == null || !possibleBorderValues.contains(element.text));
-          css.LiteralTerm? borderStyle = potentialStyles.firstOrNull;
+          css.LiteralTerm borderStyle = potentialStyles.first!;
           Border newBorder = Border(
             left: style.border?.left.copyWith(
               width: ExpressionMapping.expressionToBorderWidth(borderWidth),
@@ -82,7 +84,7 @@ Style declarationsToStyle(Map<String, List<css.Expression>> declarations) {
           List<String> possibleBorderValues = ["dotted", "dashed", "solid", "double", "groove", "ridge", "inset", "outset", "none", "hidden"];
           /// List<css.LiteralTerm> might include other values than the ones we want for [BorderSide.style], so make sure to remove those before passing it to [ExpressionMapping]
           potentialStyles.removeWhere((element) => element == null || !possibleBorderValues.contains(element.text));
-          css.LiteralTerm? borderStyle = potentialStyles.firstOrNull;
+          css.LiteralTerm borderStyle = potentialStyles.first!;
           Border newBorder = Border(
             left: style.border?.left ?? BorderSide.none,
             right: style.border?.right.copyWith(
@@ -115,7 +117,7 @@ Style declarationsToStyle(Map<String, List<css.Expression>> declarations) {
           List<String> possibleBorderValues = ["dotted", "dashed", "solid", "double", "groove", "ridge", "inset", "outset", "none", "hidden"];
           /// List<css.LiteralTerm> might include other values than the ones we want for [BorderSide.style], so make sure to remove those before passing it to [ExpressionMapping]
           potentialStyles.removeWhere((element) => element == null || !possibleBorderValues.contains(element.text));
-          css.LiteralTerm? borderStyle = potentialStyles.firstOrNull;
+          css.LiteralTerm borderStyle = potentialStyles.first!;
           Border newBorder = Border(
             left: style.border?.left ?? BorderSide.none,
             right: style.border?.right ?? BorderSide.none,
@@ -621,7 +623,7 @@ class ExpressionMapping {
     if (value is css.NumberTerm) {
       return FontSize(double.tryParse(value.text));
     } else if (value is css.PercentageTerm) {
-      return FontSize.percent(double.tryParse(value.text)!);
+      return FontSize.percent(int.tryParse(value.text)!);
     } else if (value is css.EmTerm) {
       return FontSize.em(double.tryParse(value.text));
     } else if (value is css.RemTerm) {
@@ -742,8 +744,6 @@ class ExpressionMapping {
         return ListStyleType.UPPER_LATIN;
       case 'upper-roman':
         return ListStyleType.UPPER_ROMAN;
-      case 'none':
-        return ListStyleType.NONE;
     }
     return null;
   }
@@ -870,10 +870,10 @@ class ExpressionMapping {
       css.Expression? offsetX;
       css.Expression? offsetY;
       css.Expression? blurRadius;
-      css.Expression? color;
+      css.HexColorTerm? color;
       int expressionIndex = 0;
       list.forEach((element) {
-        if (element is css.HexColorTerm || element is css.FunctionTerm) {
+        if (element is css.HexColorTerm) {
           color = element;
         } else if (expressionIndex == 0) {
           offsetX = element;

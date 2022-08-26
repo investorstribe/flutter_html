@@ -37,14 +37,6 @@ class Style {
   /// Default: Theme.of(context).style.textTheme.body1.fontFamily
   String? fontFamily;
 
-
-  /// The list of font families to fall back on when a glyph cannot be found in default font family.
-  ///
-  /// Inherited: yes,
-  /// Default: null
-  List<String>? fontFamilyFallback;
-
-
   /// CSS attribute "`font-feature-settings`"
   ///
   /// Inherited: yes,
@@ -207,7 +199,6 @@ class Style {
     this.direction,
     this.display,
     this.fontFamily,
-    this.fontFamilyFallback,
     this.fontFeatureSettings,
     this.fontSize,
     this.fontStyle,
@@ -272,7 +263,6 @@ class Style {
       decorationStyle: textDecorationStyle,
       decorationThickness: textDecorationThickness,
       fontFamily: fontFamily,
-      fontFamilyFallback: fontFamilyFallback,
       fontFeatures: fontFeatureSettings,
       fontSize: fontSize?.size,
       fontStyle: fontStyle,
@@ -298,7 +288,6 @@ class Style {
       direction: other.direction,
       display: other.display,
       fontFamily: other.fontFamily,
-      fontFamilyFallback: other.fontFamilyFallback,
       fontFeatureSettings: other.fontFeatureSettings,
       fontSize: other.fontSize,
       fontStyle: other.fontStyle,
@@ -352,7 +341,6 @@ class Style {
       direction: child.direction ?? direction,
       display: display == Display.NONE ? display : child.display,
       fontFamily: child.fontFamily ?? fontFamily,
-      fontFamilyFallback: child.fontFamilyFallback ?? fontFamilyFallback,
       fontFeatureSettings: child.fontFeatureSettings ?? fontFeatureSettings,
       fontSize: finalFontSize,
       fontStyle: child.fontStyle ?? fontStyle,
@@ -380,7 +368,6 @@ class Style {
     TextDirection? direction,
     Display? display,
     String? fontFamily,
-    List<String>? fontFamilyFallback,
     List<FontFeature>? fontFeatureSettings,
     FontSize? fontSize,
     FontStyle? fontStyle,
@@ -418,7 +405,6 @@ class Style {
       direction: direction ?? this.direction,
       display: display ?? this.display,
       fontFamily: fontFamily ?? this.fontFamily,
-      fontFamilyFallback: fontFamilyFallback ?? this.fontFamilyFallback,
       fontFeatureSettings: fontFeatureSettings ?? this.fontFeatureSettings,
       fontSize: fontSize ?? this.fontSize,
       fontStyle: fontStyle ?? this.fontStyle,
@@ -460,7 +446,6 @@ class Style {
     this.textDecorationStyle = textStyle.decorationStyle;
     this.textDecorationThickness = textStyle.decorationThickness;
     this.fontFamily = textStyle.fontFamily;
-    this.fontFamilyFallback = textStyle.fontFamilyFallback;
     this.fontFeatureSettings = textStyle.fontFeatures;
     this.fontSize = FontSize(textStyle.fontSize);
     this.fontStyle = textStyle.fontStyle;
@@ -488,8 +473,8 @@ class FontSize {
   const FontSize(this.size, {this.units = ""});
 
   /// A percentage of the parent style's font size.
-  factory FontSize.percent(double percent) {
-    return FontSize(percent / -100.0, units: "%");
+  factory FontSize.percent(int percent) {
+    return FontSize(percent.toDouble() / -100.0, units: "%");
   }
 
   factory FontSize.em(double? em) {
