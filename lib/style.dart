@@ -19,6 +19,8 @@ class Style {
   /// Default: unspecified,
   Color? color;
 
+  Color? listMarkerColor;
+
   /// CSS attribute "`direction`"
   ///
   /// Inherited: yes,
@@ -228,6 +230,7 @@ class Style {
     this.maxLines,
     this.textOverflow,
     this.textTransform = TextTransform.none,
+    this.listMarkerColor = Colors.red,
   }) {
     if (this.alignment == null &&
         (display == Display.BLOCK || display == Display.LIST_ITEM)) {
@@ -236,16 +239,17 @@ class Style {
   }
 
   static Map<String, Style> fromThemeData(ThemeData theme) => {
-    'h1': Style.fromTextStyle(theme.textTheme.headline1!),
-    'h2': Style.fromTextStyle(theme.textTheme.headline2!),
-    'h3': Style.fromTextStyle(theme.textTheme.headline3!),
-    'h4': Style.fromTextStyle(theme.textTheme.headline4!),
-    'h5': Style.fromTextStyle(theme.textTheme.headline5!),
-    'h6': Style.fromTextStyle(theme.textTheme.headline6!),
-    'body': Style.fromTextStyle(theme.textTheme.bodyText2!),
-  };
+        'h1': Style.fromTextStyle(theme.textTheme.headline1!),
+        'h2': Style.fromTextStyle(theme.textTheme.headline2!),
+        'h3': Style.fromTextStyle(theme.textTheme.headline3!),
+        'h4': Style.fromTextStyle(theme.textTheme.headline4!),
+        'h5': Style.fromTextStyle(theme.textTheme.headline5!),
+        'h6': Style.fromTextStyle(theme.textTheme.headline6!),
+        'body': Style.fromTextStyle(theme.textTheme.bodyText2!),
+      };
 
-  static Map<String, Style> fromCss(String css, OnCssParseError? onCssParseError) {
+  static Map<String, Style> fromCss(
+      String css, OnCssParseError? onCssParseError) {
     final declarations = parseExternalCss(css, onCssParseError);
     Map<String, Style> styleMap = {};
     declarations.forEach((key, value) {
@@ -283,60 +287,65 @@ class Style {
 
   Style merge(Style other) {
     return copyWith(
-      backgroundColor: other.backgroundColor,
-      color: other.color,
-      direction: other.direction,
-      display: other.display,
-      fontFamily: other.fontFamily,
-      fontFeatureSettings: other.fontFeatureSettings,
-      fontSize: other.fontSize,
-      fontStyle: other.fontStyle,
-      fontWeight: other.fontWeight,
-      height: other.height,
-      lineHeight: other.lineHeight,
-      letterSpacing: other.letterSpacing,
-      listStyleType: other.listStyleType,
-      listStylePosition: other.listStylePosition,
-      padding: other.padding,
-      //TODO merge EdgeInsets
-      margin: other.margin,
-      //TODO merge EdgeInsets
-      textAlign: other.textAlign,
-      textDecoration: other.textDecoration,
-      textDecorationColor: other.textDecorationColor,
-      textDecorationStyle: other.textDecorationStyle,
-      textDecorationThickness: other.textDecorationThickness,
-      textShadow: other.textShadow,
-      verticalAlign: other.verticalAlign,
-      whiteSpace: other.whiteSpace,
-      width: other.width,
-      wordSpacing: other.wordSpacing,
-
-      before: other.before,
-      after: other.after,
-      border: other.border,
-      //TODO merge border
-      alignment: other.alignment,
-      markerContent: other.markerContent,
-      maxLines: other.maxLines,
-      textOverflow: other.textOverflow,
-      textTransform: other.textTransform,
-    );
+        backgroundColor: other.backgroundColor,
+        color: other.color,
+        direction: other.direction,
+        display: other.display,
+        fontFamily: other.fontFamily,
+        fontFeatureSettings: other.fontFeatureSettings,
+        fontSize: other.fontSize,
+        fontStyle: other.fontStyle,
+        fontWeight: other.fontWeight,
+        height: other.height,
+        lineHeight: other.lineHeight,
+        letterSpacing: other.letterSpacing,
+        listStyleType: other.listStyleType,
+        listStylePosition: other.listStylePosition,
+        padding: other.padding,
+        //TODO merge EdgeInsets
+        margin: other.margin,
+        //TODO merge EdgeInsets
+        textAlign: other.textAlign,
+        textDecoration: other.textDecoration,
+        textDecorationColor: other.textDecorationColor,
+        textDecorationStyle: other.textDecorationStyle,
+        textDecorationThickness: other.textDecorationThickness,
+        textShadow: other.textShadow,
+        verticalAlign: other.verticalAlign,
+        whiteSpace: other.whiteSpace,
+        width: other.width,
+        wordSpacing: other.wordSpacing,
+        before: other.before,
+        after: other.after,
+        border: other.border,
+        //TODO merge border
+        alignment: other.alignment,
+        markerContent: other.markerContent,
+        maxLines: other.maxLines,
+        textOverflow: other.textOverflow,
+        textTransform: other.textTransform,
+        listMarkerColor: other.listMarkerColor);
   }
 
   Style copyOnlyInherited(Style child) {
-    FontSize? finalFontSize = child.fontSize != null ?
-      fontSize != null && child.fontSize?.units == "em" ?
-        FontSize(child.fontSize!.size! * fontSize!.size!) : child.fontSize
-      : fontSize != null && fontSize!.size! < 0 ?
-        FontSize.percent(100) : fontSize;
-    LineHeight? finalLineHeight = child.lineHeight != null ?
-      child.lineHeight?.units == "length" ?
-        LineHeight(child.lineHeight!.size! / (finalFontSize == null ? 14 : finalFontSize.size!) * 1.2) : child.lineHeight
-      : lineHeight;
+    FontSize? finalFontSize = child.fontSize != null
+        ? fontSize != null && child.fontSize?.units == "em"
+            ? FontSize(child.fontSize!.size! * fontSize!.size!)
+            : child.fontSize
+        : fontSize != null && fontSize!.size! < 0
+            ? FontSize.percent(100)
+            : fontSize;
+    LineHeight? finalLineHeight = child.lineHeight != null
+        ? child.lineHeight?.units == "length"
+            ? LineHeight(child.lineHeight!.size! /
+                (finalFontSize == null ? 14 : finalFontSize.size!) *
+                1.2)
+            : child.lineHeight
+        : lineHeight;
     return child.copyWith(
-      backgroundColor: child.backgroundColor != Colors.transparent ?
-        child.backgroundColor : backgroundColor,
+      backgroundColor: child.backgroundColor != Colors.transparent
+          ? child.backgroundColor
+          : backgroundColor,
       color: child.color ?? color,
       direction: child.direction ?? direction,
       display: display == Display.NONE ? display : child.display,
@@ -350,9 +359,10 @@ class Style {
       listStyleType: child.listStyleType ?? listStyleType,
       listStylePosition: child.listStylePosition ?? listStylePosition,
       textAlign: child.textAlign ?? textAlign,
-      textDecoration: TextDecoration.combine(
-          [child.textDecoration ?? TextDecoration.none,
-            textDecoration ?? TextDecoration.none]),
+      textDecoration: TextDecoration.combine([
+        child.textDecoration ?? TextDecoration.none,
+        textDecoration ?? TextDecoration.none
+      ]),
       textShadow: child.textShadow ?? textShadow,
       whiteSpace: child.whiteSpace ?? whiteSpace,
       wordSpacing: child.wordSpacing ?? wordSpacing,
@@ -398,6 +408,7 @@ class Style {
     TextOverflow? textOverflow,
     TextTransform? textTransform,
     bool? beforeAfterNull,
+    Color? listMarkerColor,
   }) {
     return Style(
       backgroundColor: backgroundColor ?? this.backgroundColor,
@@ -435,6 +446,7 @@ class Style {
       maxLines: maxLines ?? this.maxLines,
       textOverflow: textOverflow ?? this.textOverflow,
       textTransform: textTransform ?? this.textTransform,
+      listMarkerColor: listMarkerColor ?? this.listMarkerColor,
     );
   }
 
@@ -534,9 +546,11 @@ class ListStyleType {
 
   const ListStyleType(this.text, {this.type = "marker", this.widget});
 
-  factory ListStyleType.fromImage(String url) => ListStyleType(url, type: "image");
+  factory ListStyleType.fromImage(String url) =>
+      ListStyleType(url, type: "image");
 
-  factory ListStyleType.fromWidget(Widget widget) => ListStyleType("", widget: widget, type: "widget");
+  factory ListStyleType.fromWidget(Widget widget) =>
+      ListStyleType("", widget: widget, type: "widget");
 
   static const LOWER_ALPHA = ListStyleType("LOWER_ALPHA");
   static const UPPER_ALPHA = ListStyleType("UPPER_ALPHA");
