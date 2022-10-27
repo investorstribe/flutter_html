@@ -230,7 +230,7 @@ class Style {
     this.maxLines,
     this.textOverflow,
     this.textTransform = TextTransform.none,
-    this.listMarkerColor = Colors.red,
+    this.listMarkerColor,
   }) {
     if (this.alignment == null &&
         (display == Display.BLOCK || display == Display.LIST_ITEM)) {
