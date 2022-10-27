@@ -267,6 +267,7 @@ class _MyHomePageState extends State<MyHomePage> {
               alignment: Alignment.topLeft,
             ),
             'h5': Style(maxLines: 2, textOverflow: TextOverflow.ellipsis),
+            'li': Style(listMarkerColor: Colors.teal),
           },
           customRender: {
             'em': (RenderContext rendercontext, Widget child) {
